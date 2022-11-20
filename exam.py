@@ -8,7 +8,7 @@ def file_scanner(folder_path: Optional[str] = None,
                  import_set: Optional[set] = None):
     for root, _, files in os.walk(folder_path):
         for file in files:
-            if os.path.splitext(file)[1] == ".txt":
+            if os.path.splitext(file)[1] == ".py":
                 get_import(root + "/" + file, import_set)
 
 
