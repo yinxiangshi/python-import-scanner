@@ -10,13 +10,16 @@ def file_scanner(folder_path: Optional[str] = None,
         for file in files:
             if os.path.splitext(file)[1] == ".py":
                 get_import(root + "/" + file, import_set)
+                # relative path of file
+                rel_path = os.path.relpath(root + "/" + os.path.splitext(file)[0])
+                rel_path = rel_path.replace("/", ".")
+                files_name.add(rel_path)
 
 
 def get_import(file_path: Optional[str] = None,
                import_set: Optional[set] = None):
     with open(file_path, "r") as f:
         lines = f.readlines()
-
     for line in lines:
         if re.search(import_re_pattern, line) is not None:
             line = line.replace("\n", "")
@@ -29,24 +32,29 @@ def output(res_set: Optional[set] = None):
     for header in res_set:
         header_list = header.split(" ")
         lib_name = header_list[1]
-        if lib_name not in res_dict.keys():
-            res_dict[lib_name] = [None]
-        if len(header_list) > 2 and header_list[2] != "as":
-            api_ref = header_list[3:]
-            exists_api = res_dict.get(lib_name)
-            if exists_api[0] is None and len(exists_api) == 1:
-                res_dict[lib_name] = api_ref
-            else:
-                api_ref += exists_api
-            res_dict.update({lib_name: api_ref})
+        # lib_name not local files
+        if lib_name not in files_name:
+          if lib_name not in res_dict.keys():
+              res_dict[lib_name] = [None]
+          if len(header_list) > 2 and header_list[2] != "as":
+              api_ref = header_list[3:]
+              exists_api = res_dict.get(lib_name)
+              if exists_api[0] is None and len(exists_api) == 1:
+                  res_dict[lib_name] = api_ref
+              else:
+                  api_ref += exists_api
+              res_dict.update({lib_name: api_ref})
     return res_dict
 
 
 if __name__ == '__main__':
     import_re_pattern = re.compile(r"import.")
     result = set()
+    # local file names
+    files_name = set()
     file_scanner(sys.argv[1], result)
     res = output(result)
+    print(files_name)
     with open(sys.argv[2], "a") as f:
         for key, value in res.items():
             f.write("---------------------------\n")
